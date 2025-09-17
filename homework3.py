@@ -18,18 +18,6 @@ student_name = "Immanuel Anaborne"
 # Section 1: Tile Puzzle
 ############################################################
 
-def __init__(self, board):
-    self.board = board
-    self.rows = len(board)
-    self.cols = len(board[0]) if self.rows > 0 else 0
-    self.empty_tile = self.find_empty_tile()
-
-
-
-
-def get_board(self):
-    return [row[:] for row in self.board]
-
 
 def create_tile_puzzle(rows, cols):
     board = []
@@ -79,17 +67,16 @@ class TilePuzzle(object):
         return False
 
     def match_direction(self, direction):
-        match direction:
-            case 'up':
-                dr, dc = -1, 0
-            case 'down':
-                dr, dc = 1, 0
-            case 'left':
-                dr, dc = 0, -1
-            case 'right':
-                dr, dc = 0, 1
-            case _:
-                return False
+        if direction == 'up':
+            return -1, 0
+        elif direction == 'down':
+            return 1, 0
+        elif direction == 'left':
+            return 0, -1
+        elif direction == 'right':
+            return 0, 1
+        else:
+            raise ValueError(f"Unknown direction: {direction}")
 
     def scramble(self, num_moves):
         directions = ['up', 'down', 'left', 'right']
@@ -116,7 +103,7 @@ class TilePuzzle(object):
         directions = ['up', 'down', 'left', 'right']
         for direction in directions:
             dr_dc = self.match_direction(direction)
-            if not dr_dc:
+            if not isinstance(dr_dc, tuple):
                 continue
             dr, dc = dr_dc
             er, ec = self.empty_tile

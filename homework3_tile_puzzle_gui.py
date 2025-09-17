@@ -5,19 +5,16 @@ import homework3
 
 class Tile(tkinter.Canvas):
 
-    BACKGROUND_NORMAL = "white"
-    BACKGROUND_EMPTY = "black"
-
-    def __init__(self, master, tile, size=60):
-        tkinter.Canvas.__init__(self, master, height=size, width=size,
-            highlightthickness=2, highlightbackground="black")
-        self.text = self.create_text(size / 2, size / 2, font=("Arial", 24))
-        self.set_state(tile)
+    BACKGROUND_NORMAL = 'white'
+    BACKGROUND_EMPTY = 'black'
+    TEXT_NORMAL = 'blue'
+    TEXT_EMPTY = 'red'
 
     def set_state(self, tile):
         color = Tile.BACKGROUND_EMPTY if tile == 0 else Tile.BACKGROUND_NORMAL
+        text_color = Tile.TEXT_EMPTY if tile == 0 else Tile.TEXT_NORMAL
         self.configure(background=color)
-        self.itemconfig(self.text, text=tile)
+        self.itemconfig(self.text, text=tile, fill=text_color)
 
 class Board(tkinter.Frame):
 
