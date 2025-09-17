@@ -36,7 +36,6 @@ def create_tile_puzzle(rows, cols):
 
 
 class TilePuzzle(object):
-    
     # Required
     def __init__(self, board):
         self.board = board
@@ -62,25 +61,28 @@ class TilePuzzle(object):
         er, ec = self.empty_tile
         new_r, new_c = er + dr, ec + dc
         if 0 <= new_r < self.rows and 0 <= new_c < self.cols:
-            self.board[er][ec], self.board[new_r][new_c] = self.board[new_r][new_c], self.board[er][ec]
+            self.board[er][ec], self.board[new_r][new_c] = (
+                self.board[new_r][new_c],
+                self.board[er][ec],
+            )
             self.empty_tile = (new_r, new_c)
             return True
         return False
 
     def match_direction(self, direction):
-        if direction == 'up':
+        if direction == "up":
             return -1, 0
-        elif direction == 'down':
+        elif direction == "down":
             return 1, 0
-        elif direction == 'left':
+        elif direction == "left":
             return 0, -1
-        elif direction == 'right':
+        elif direction == "right":
             return 0, 1
         else:
             raise ValueError(f"Unknown direction: {direction}")
 
     def scramble(self, num_moves):
-        directions = ['up', 'down', 'left', 'right']
+        directions = ["up", "down", "left", "right"]
         for _ in range(num_moves):
             possible_moves = []
             for direction in directions:
@@ -93,7 +95,13 @@ class TilePuzzle(object):
                 self.perform_move(random.choice(possible_moves))
 
     def is_solved(self):
-        expected = [[(r * self.cols + c + 1) % (self.rows * self.cols) for c in range(self.cols)] for r in range(self.rows)]
+        expected = [
+            [
+                (r * self.cols + c + 1) % (self.rows * self.cols)
+                for c in range(self.cols)
+            ]
+            for r in range(self.rows)
+        ]
         return self.board == expected
 
     def copy(self):
@@ -101,7 +109,7 @@ class TilePuzzle(object):
         return TilePuzzle(new_board)
 
     def successors(self):
-        directions = ['up', 'down', 'left', 'right']
+        directions = ["up", "down", "left", "right"]
         for direction in directions:
             dr_dc = self.match_direction(direction)
             if not isinstance(dr_dc, tuple):
@@ -116,24 +124,34 @@ class TilePuzzle(object):
 
     # Required
     def find_solutions_iddfs(self):
-        def iddfs_helper(puzzle, limit, moves, visited):
+        def iddfs_collect(puzzle, limit, moves, visited, results):
+            board_tuple = tuple(tuple(row) for row in puzzle.board)
+            if board_tuple in visited:
+                return
             if puzzle.is_solved():
-                yield moves
+                results.append(moves)
                 return
             if limit == 0:
                 return
-            board_tuple = tuple(tuple(row) for row in puzzle.board)
             visited.add(board_tuple)
             for direction, new_puzzle in puzzle.successors():
-                new_board_tuple = tuple(tuple(row) for row in new_puzzle.board)
-                if new_board_tuple not in visited:
-                    yield from iddfs_helper(new_puzzle, limit - 1, moves + [direction], visited)
+                iddfs_collect(
+                    new_puzzle,
+                    limit - 1,
+                    moves + [direction],
+                    visited,
+                    results,
+                )
             visited.remove(board_tuple)
 
         depth = 0
         while True:
-            visited = set()
-            yield from iddfs_helper(self, depth, [], visited)
+            results = []
+            iddfs_collect(self, depth, [], set(), results)
+            if results:
+                for sol in results:
+                    yield sol
+                return
             depth += 1
 
     # Required
@@ -153,7 +171,7 @@ class TilePuzzle(object):
 
         start_board = tuple(tuple(row) for row in self.board)
         frontier = PriorityQueue()
-        
+
         frontier.put((manhattan(self.board), 0, [], start_board, self.copy()))
         visited = set()
         visited.add(start_board)
@@ -169,8 +187,11 @@ class TilePuzzle(object):
                 visited.add(new_board_tuple)
                 g = cost + 1
                 h = manhattan(new_puzzle.board)
-                frontier.put((g + h, g, path + [direction], new_board_tuple, new_puzzle))
+                frontier.put(
+                    (g + h, g, path + [direction], new_board_tuple, new_puzzle)
+                )
         return None
+
 
 ############################################################
 # Section 2: Grid Navigation
@@ -193,8 +214,16 @@ def find_path(start, goal, scene):
     if start == goal:
         return [start]
 
-    neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1),
-                 (-1, -1), (-1, 1), (1, -1), (1, 1)]
+    neighbors = [
+        (-1, 0),
+        (1, 0),
+        (0, -1),
+        (0, 1),
+        (-1, -1),
+        (-1, 1),
+        (1, -1),
+        (1, 1),
+    ]
 
     def euclid(a, b):
         return math.hypot(a[0] - b[0], a[1] - b[1])
@@ -209,7 +238,7 @@ def find_path(start, goal, scene):
     while not frontier.empty():
         f, g, _, current = frontier.get()
 
-        if g > g_cost.get(current, float('inf')) + 1e-12:
+        if g > g_cost.get(current, float("inf")) + 1e-12:
             continue
 
         if current == goal:
@@ -233,17 +262,26 @@ def find_path(start, goal, scene):
             step_cost = math.hypot(dr, dc)
             tentative_g = g + step_cost
 
-            if tentative_g + 1e-12 < g_cost.get(neighbor, float('inf')):
+            if tentative_g + 1e-12 < g_cost.get(neighbor, float("inf")):
                 g_cost[neighbor] = tentative_g
                 came_from[neighbor] = current
                 counter += 1
-                frontier.put((tentative_g + euclid(neighbor, goal), tentative_g, counter, neighbor))
+                frontier.put(
+                    (
+                        tentative_g + euclid(neighbor, goal),
+                        tentative_g,
+                        counter,
+                        neighbor,
+                    )
+                )
 
     return None
+
 
 ############################################################
 # Section 3: Linear Disk Movement, Revisited
 ############################################################
+
 
 def solve_distinct_disks(length, n):
     if n > length or n <= 0 or length <= 0:
@@ -252,7 +290,10 @@ def solve_distinct_disks(length, n):
     start = tuple((i + 1) if i < n else 0 for i in range(length))
 
     goal_pos = {k: length - k for k in range(1, n + 1)}
-    goal = tuple((n - (i - (length - n))) if i >= length - n else 0 for i in range(length))
+    goal = tuple(
+        (n - (i - (length - n))) if i >= length - n else 0
+        for i in range(length)
+    )
     if start == goal:
         return []
 
@@ -291,16 +332,17 @@ def solve_distinct_disks(length, n):
         f, g, _, state, path = frontier.get()
         if state == goal:
             return path
-        if g > g_cost.get(state, float('inf')) + 1e-12:
+        if g > g_cost.get(state, float("inf")) + 1e-12:
             continue
         for move, succ in successors(state):
             ng = g + 1
-            if ng + 1e-12 < g_cost.get(succ, float('inf')):
+            if ng + 1e-12 < g_cost.get(succ, float("inf")):
                 g_cost[succ] = ng
                 h = heuristic(succ)
                 counter += 1
                 frontier.put((ng + h, ng, counter, succ, path + [move]))
     return None
+
 
 ############################################################
 # Section 4: Feedback
