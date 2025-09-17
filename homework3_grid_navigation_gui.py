@@ -108,10 +108,19 @@ class GridNavigationGUI(tkinter.Frame):
 
     def find_path_click(self):
         start, goal = self.start_and_goal
-        if start is not None and goal is not None:
+        print(f"Start: {start}, Goal: {goal}")
+        if start is None or goal is None:
+            print("Error: Start or goal not set.")
+            return
+        try:
             path = homework3.find_path(start, goal, self.scene)
+            print(f"Path returned: {path}")
             if path:
                 self.grid.draw_path(path)
+            else:
+                print("No path found between start and goal.")
+        except Exception as e:
+            print(f"Exception during pathfinding: {e}")
 
     def clear_paths_click(self):
         self.grid.clear_paths()

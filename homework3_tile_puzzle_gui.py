@@ -10,11 +10,29 @@ class Tile(tkinter.Canvas):
     TEXT_NORMAL = 'blue'
     TEXT_EMPTY = 'red'
 
+    def __init__(self, master, tile_value, size=80, **kwargs):
+        # Only pass 'master' as positional arg, all config as keyword args
+        kwargs['width'] = size
+        kwargs['height'] = size
+        kwargs['highlightthickness'] = 1
+        super().__init__(master, **kwargs)
+
+        # Create a text item once; we'll update it in set_state
+        self.text = self.create_text(
+            size // 2,
+            size // 2,
+            text=str(tile_value),
+            font=("Helvetica", int(size * 0.4))
+        )
+
+        # Apply initial appearance
+        self.set_state(tile_value)
+
     def set_state(self, tile):
         color = Tile.BACKGROUND_EMPTY if tile == 0 else Tile.BACKGROUND_NORMAL
         text_color = Tile.TEXT_EMPTY if tile == 0 else Tile.TEXT_NORMAL
         self.configure(background=color)
-        self.itemconfig(self.text, text=tile, fill=text_color)
+        self.itemconfig(self.text, text=str(tile), fill=text_color)
 
 class Board(tkinter.Frame):
 
@@ -102,7 +120,7 @@ class TilePuzzleGUI(tkinter.Frame):
 if __name__ == "__main__":
     root = tkinter.Tk()
     root.title("Tile Puzzle")
-    rows, cols = sys.argv[1:]
+    rows, cols = sys.argv[1], sys.argv[2]
     TilePuzzleGUI(root, int(rows), int(cols)).pack()
     root.resizable(height=False, width=False)
     root.mainloop()

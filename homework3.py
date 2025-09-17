@@ -9,6 +9,7 @@
 # Include your imports here, if any are used.
 import random
 from queue import PriorityQueue
+import math
 
 ############################################################
 
@@ -152,7 +153,7 @@ class TilePuzzle(object):
 
         start_board = tuple(tuple(row) for row in self.board)
         frontier = PriorityQueue()
-        # (priority, moves_so_far, board_tuple, puzzle_obj)
+        
         frontier.put((manhattan(self.board), 0, [], start_board, self.copy()))
         visited = set()
         visited.add(start_board)
@@ -177,15 +178,129 @@ class TilePuzzle(object):
 
 
 def find_path(start, goal, scene):
-    pass
+
+    rows = len(scene)
+    cols = len(scene[0]) if rows > 0 else 0
+
+    def in_bounds(p):
+        r, c = p
+        return 0 <= r < rows and 0 <= c < cols
+
+    if not in_bounds(start) or not in_bounds(goal):
+        return None
+    if scene[start[0]][start[1]] or scene[goal[0]][goal[1]]:
+        return None
+    if start == goal:
+        return [start]
+
+    neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1),
+                 (-1, -1), (-1, 1), (1, -1), (1, 1)]
+
+    def euclid(a, b):
+        return math.hypot(a[0] - b[0], a[1] - b[1])
+
+    frontier = PriorityQueue()
+    counter = 0
+    g_cost = {start: 0.0}
+    came_from = {}
+
+    frontier.put((euclid(start, goal), 0.0, counter, start))
+
+    while not frontier.empty():
+        f, g, _, current = frontier.get()
+
+        if g > g_cost.get(current, float('inf')) + 1e-12:
+            continue
+
+        if current == goal:
+            path = []
+            node = current
+            while node in came_from:
+                path.append(node)
+                node = came_from[node]
+            path.append(start)
+            path.reverse()
+            return path
+
+        for dr, dc in neighbors:
+            nr, nc = current[0] + dr, current[1] + dc
+            neighbor = (nr, nc)
+            if not in_bounds(neighbor):
+                continue
+            if scene[nr][nc]:
+                continue
+
+            step_cost = math.hypot(dr, dc)
+            tentative_g = g + step_cost
+
+            if tentative_g + 1e-12 < g_cost.get(neighbor, float('inf')):
+                g_cost[neighbor] = tentative_g
+                came_from[neighbor] = current
+                counter += 1
+                frontier.put((tentative_g + euclid(neighbor, goal), tentative_g, counter, neighbor))
+
+    return None
 
 ############################################################
 # Section 3: Linear Disk Movement, Revisited
 ############################################################
 
-
 def solve_distinct_disks(length, n):
-    pass
+    if n > length or n <= 0 or length <= 0:
+        return None
+
+    start = tuple((i + 1) if i < n else 0 for i in range(length))
+
+    goal_pos = {k: length - k for k in range(1, n + 1)}
+    goal = tuple((n - (i - (length - n))) if i >= length - n else 0 for i in range(length))
+    if start == goal:
+        return []
+
+    def heuristic(state):
+        h = 0
+        for idx, val in enumerate(state):
+            if val == 0:
+                continue
+            target = goal_pos[val]
+            dist = abs(idx - target)
+            h += (dist + 1) // 2
+        return h
+
+    def successors(state):
+        for i, v in enumerate(state):
+            if v == 0:
+                continue
+            for j in (i - 1, i + 1):
+                if 0 <= j < length and state[j] == 0:
+                    new = list(state)
+                    new[j], new[i] = new[i], 0
+                    yield (i, j), tuple(new)
+            for j, mid in ((i - 2, i - 1), (i + 2, i + 1)):
+                if 0 <= j < length and state[j] == 0 and state[mid] != 0:
+                    new = list(state)
+                    new[j], new[i] = new[i], 0
+                    yield (i, j), tuple(new)
+
+    frontier = PriorityQueue()
+    counter = 0
+    g_cost = {start: 0}
+    frontier.put((heuristic(start), 0, counter, start, []))
+    counter += 1
+
+    while not frontier.empty():
+        f, g, _, state, path = frontier.get()
+        if state == goal:
+            return path
+        if g > g_cost.get(state, float('inf')) + 1e-12:
+            continue
+        for move, succ in successors(state):
+            ng = g + 1
+            if ng + 1e-12 < g_cost.get(succ, float('inf')):
+                g_cost[succ] = ng
+                h = heuristic(succ)
+                counter += 1
+                frontier.put((ng + h, ng, counter, succ, path + [move]))
+    return None
 
 ############################################################
 # Section 4: Feedback
@@ -194,19 +309,17 @@ def solve_distinct_disks(length, n):
 
 # Just an approximation is fine.
 feedback_question_1 = """
-Type your response here.
-Your response may span multiple lines.
-Do not include these instructions in your response.
+10
 """
 
 feedback_question_2 = """
-Type your response here.
-Your response may span multiple lines.
-Do not include these instructions in your response.
+It was difficult debugging subtle logic errors \
+in the A* algorithm implementation. I had some trouble figuring out \
+the path finding, especially with the priority queue.
 """
 
 feedback_question_3 = """
-Type your response here.
-Your response may span multiple lines.
-Do not include these instructions in your response.
+I liked that the assignment provided a hands-on opportunity to implement \
+and visualize classic search algorithms. The GUI components made it more  \
+interactive and helped with debugging.
 """
